@@ -6,3 +6,4 @@ ACCESS_TOKEN="Access token"
 ACCESS_TOKEN_SECRET="Access token secret"
 
 API_11_URI="https://api.twitter.com/1.1/"
+TWITTER_USER_TIMELINE_URI="https://api.twitter.com/1.1/statuses/user_timeline.json"
