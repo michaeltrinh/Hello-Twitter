@@ -1,2 +1,5 @@
 #Ignore the keys file
 ./my_keys.txt
+
+#ignore all the compiled python files
+**/*.pyc
