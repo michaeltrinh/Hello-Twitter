@@ -2,17 +2,62 @@ import twitter
 import fileinput
 import constants
 
-file=fileinput.input("my_keys.txt")
+token_file=fileinput.input("my_keys.txt")
 
-def printUserDetails(user):
+
+def evaluate_common_ppl_followed(user, friendUser):
+    print ("Looking for people you both follow..")
+    user_follows = api.GetFriendIDs(user_id=user.GetId(), screen_name=user.GetScreenName())
+    print("%s follows %d people." % (user.GetScreenName(), len(user_follows)))
+
+    friend_user_follows = api.GetFriendIDs(user_id=friendUser.GetId(), screen_name=friendUser.GetScreenName())
+    print("%s follows %d people." %(friendUser.GetScreenName(), len(friend_user_follows)))
+
+    common_follows = [followerId for followerId in user_follows if followerId in friend_user_follows]
+
+    if len(common_follows) > 0:
+        print ("You both follow %d common people." % len(common_follows))
+
+        if raw_input("See common followers names? (y/n) : ") == 'y':
+            for commonPersonId in common_follows:
+                print("------ ----- ***** ----- -----")
+                print("ScreenName: %s" % api.GetUser(user_id=commonPersonId).GetScreenName())
+    else:
+        print ("You don't follow anyone in common")
+
+def get_user_mentions(fromUser, toUser):
+    url = '%s/statuses/user_timeline.json?count=3200&trim_user=1&exclude_replies=0&include_rts=1&screen_name=%s' % \
+          (api.base_url,fromUser.GetScreenName())
+
+    json = api._RequestUrl(url, 'GET')
+    data = api._ParseAndCheckTwitter(json.content)
+
+    tweets_with_friend_mention = []
+
+    for tweet in data:
+        user_mentions = tweet['entities']['user_mentions']
+        if user_mentions:
+            for user in user_mentions:
+                if user['id'] == toUser.GetId():
+                    tweets_with_friend_mention.append(tweet)
+
+    print ("In the last 3200 tweets, number of tweets with %s's mention %d" %(toUser.GetScreenName(), len(tweets_with_friend_mention)))
+    print ("Tweets:")
+    print ("\t----- ----- ***** ----- -----")
+    for tweet in tweets_with_friend_mention:
+        print ("\t%s" % tweet['text'])
+    print ("\t----- ----- ***** ----- -----")
+
+
+def print_user_details(user):
     print ("***** User stats *****")
-    print ("Name            : %s" %user.GetName())
-    print ("Description     : %s" %user.GetDescription())
-    print ("Follower Count  : %d" %user.GetFollowersCount())
-    print ("Following Count : %d" %user.GetFriendsCount())
-    print ("User ID         : %d" %user.GetId())
+    print ("Name            : %s" % user.GetName())
+    print ("Description     : %s" % user.GetDescription())
+    print ("Follower Count  : %d" % user.GetFollowersCount())
+    print ("Following Count : %d" % user.GetFriendsCount())
+    print ("User ID         : %d" % user.GetId())
 
-for line in file:
+for line in token_file:
     if constants.ACCESS_TOKEN_SECRET in line:
         access_token_secret = line.split(":")[1].strip()
     elif constants.ACCESS_TOKEN in line:
@@ -29,47 +74,29 @@ api = twitter.Api(consumer_key=consumer_key,
 
 user = api.GetUser(screen_name='ankurdh')
 
-printUserDetails(user)
+print_user_details(user)
 
 friendScreenName = raw_input("Want to do some stats with a friend? Enter friends screen name: ")
 print ("Looking for a '%s'...." %friendScreenName)
 friendUser = api.GetUser(screen_name=friendScreenName)
 print ("Done Looking...")
 if user:
-    printUserDetails(friendUser)
+    print_user_details(friendUser)
 else:
     print ("User '%s' not found." %friendScreenName)
 
-print ("Looking for people you both follow..")
-userFollows = api.GetFriendIDs(user_id=user.GetId(), screen_name=user.GetScreenName())
-print("%s follows %d people." %(user.GetScreenName(), len(userFollows)))
+get_user_mentions(user, friendUser)
 
-friendUserFollows = api.GetFriendIDs(user_id=friendUser.GetId(), screen_name=friendUser.GetScreenName())
-print("%s follows %d people." %(friendUser.GetScreenName(), len(friendUserFollows)))
-
-commonFollows = [followerId for followerId in userFollows if followerId in friendUserFollows]
-
-if len(commonFollows) > 0:
-    print ("You both follow %d common people." % len(commonFollows))
-
-    if raw_input("See common followers names? (y/n) : ") == 'y':
-        for commonPersonId in commonFollows:
-            print("------ ----- ***** ----- -----")
-            print("ScreenName: %s" % api.GetUser(user_id=commonPersonId).GetScreenName())
-            print("------ ----- ***** ----- -----")
-else:
-    print ("You don't follow anyone in common")
+evaluate_common_ppl_followed(user, friendUser)
 
 print ("Looking for common followers..")
-userFollowers = api.GetFollowers(user_id=user.GetId(), screen_name=user.GetScreenName())
-friendUserFollowers = api.GetFollowers(user_id=friendUser.GetId(), screen_name=friendUser.GetScreenName())
+userFollowers = api.GetFollowerIDs(user_id=user.GetId(), screen_name=user.GetScreenName())
+friendUserFollowers = api.GetFollowerIDs(user_id=friendUser.GetId(), screen_name=friendUser.GetScreenName())
 
-commonFollowers = []
+print ("%s is followed by %d people" %(user.GetScreenName(),len(userFollowers)))
+print ("%s is followed by %d people" %(friendUser.GetScreenName(),len(friendUserFollowers)))
 
-for userFollower in userFollowers:
-    for friendUserFollower in friendUserFollowers:
-        if userFollower.GetId() == friendUserFollower.GetId():
-            commonFollowers.append(userFollower)
+commonFollowers = [followerId for followerId in userFollowers if followerId in friendUserFollowers]
 
 if len(commonFollowers) > 0:
     print ("You both have %d common followers." % len(commonFollowers))
@@ -77,7 +104,7 @@ if len(commonFollowers) > 0:
     if raw_input("See common followers names? (y/n) : ") == 'y':
         for commonPerson in commonFollowers:
             print("------ ----- ***** ----- -----")
-            print("ScreenName: %s" % commonPerson.GetScreenName())
+            print("ScreenName: %s" % api.GetUser(user_id=commonPerson).GetScreenName())
 
 else:
     print ("You don't have common followers..")
