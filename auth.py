@@ -22,12 +22,6 @@ for line in file:
     elif constants.CONSUMER_KEY in line:
         consumer_key = line.split(":")[1].strip()
 
-"""print ("Access Token: %s"
-       "Access Token Secret: %s"
-       "Consumer Key: %s"
-       "Consumer Secret: %s"
-       %(access_token_key, access_token_secret, consumer_key, consumer_secret))
-"""
 api = twitter.Api(consumer_key=consumer_key,
         consumer_secret=consumer_secret,
         access_token_key=access_token_key,
@@ -42,15 +36,33 @@ print ("Looking for a '%s'...." %friendScreenName)
 friendUser = api.GetUser(screen_name=friendScreenName)
 print ("Done Looking...")
 if user:
-    print ("Username: %s, ID: %s" %(friendUser.GetName(),friendUser.GetId()))
+    printUserDetails(friendUser)
 else:
     print ("User '%s' not found." %friendScreenName)
 
-printUserDetails(friendUser)
+print ("Looking for people you both follow..")
+userFollows = api.GetFriendIDs(user_id=user.GetId(), screen_name=user.GetScreenName())
+print("%s follows %d people." %(user.GetScreenName(), len(userFollows)))
+
+friendUserFollows = api.GetFriendIDs(user_id=friendUser.GetId(), screen_name=friendUser.GetScreenName())
+print("%s follows %d people." %(friendUser.GetScreenName(), len(friendUserFollows)))
+
+commonFollows = [followerId for followerId in userFollows if followerId in friendUserFollows]
+
+if len(commonFollows) > 0:
+    print ("You both follow %d common people." % len(commonFollows))
+
+    if raw_input("See common followers names? (y/n) : ") == 'y':
+        for commonPersonId in commonFollows:
+            print("------ ----- ***** ----- -----")
+            print("ScreenName: %s" % api.GetUser(user_id=commonPersonId).GetScreenName())
+            print("------ ----- ***** ----- -----")
+else:
+    print ("You don't follow anyone in common")
 
 print ("Looking for common followers..")
-userFollowers = api.GetFollowers(user_id=user.GetId())
-friendUserFollowers = api.GetFollowers(user_id=friendUser.GetId())
+userFollowers = api.GetFollowers(user_id=user.GetId(), screen_name=user.GetScreenName())
+friendUserFollowers = api.GetFollowers(user_id=friendUser.GetId(), screen_name=friendUser.GetScreenName())
 
 commonFollowers = []
 
@@ -69,25 +81,3 @@ if len(commonFollowers) > 0:
 
 else:
     print ("You don't have common followers..")
-
-print ("Looking for people you both follow..")
-userFollows = api.GetFriends(user_id=user.GetId())
-friendUserFollows = api.GetFriends(user_id=friendUser.GetId())
-
-commonFollows = []
-
-for userFollower in userFollows:
-    for friendUserFollower in friendUserFollows:
-        if userFollower.GetId() == friendUserFollower.GetId():
-            commonFollows.append(userFollower)
-
-if len(commonFollows) > 0:
-    print ("You both follow %d common people." % len(commonFollowers))
-
-    if raw_input("See common followers names? (y/n) : ") == 'y':
-        for commonPerson in commonFollowers:
-            print("------ ----- ***** ----- -----")
-            print("ScreenName: %s" % commonPerson.GetScreenName())
-            print("------ ----- ***** ----- -----")
-else:
-    print ("You don't follow anyone in common")
