@@ -1,16 +1,23 @@
 import twitter
 import fileinput
 import constants
-import urllib2
 import lxml.html
 import operator
-from collections import Counter
 
 token_file=fileinput.input("my_keys.txt")
+
+'''
+The below lists will hold the user timelines of the users.
+'''
 firstUserTimeline = []
 friendUserTimeline = []
 
 def get_user_timeline(user):
+    '''
+    This function takes in a user and returns the users timeline.
+    :param user: the user object whose timeline is to be got. Should be the twitter API User object.
+    :return: returns the JSON data of the user timeline
+    '''
     url = '%s/statuses/user_timeline.json?count=3200&trim_user=0&exclude_replies=0&include_rts=1&screen_name=%s' % \
           (api.base_url,user.GetScreenName())
 
@@ -21,6 +28,12 @@ def get_user_timeline(user):
 
 
 def evaluate_common_ppl_followed(user, friendUser):
+    '''
+    This function takes in two users and calculates the common followers among them
+    :param user: first user
+    :param friendUser: second user
+    :return: N/A
+    '''
     print ("Looking for people you both follow..")
     user_follows = api.GetFriendIDs(user_id=user.GetId(), screen_name=user.GetScreenName())
     #print("%s follows %d people." % (user.GetScreenName(), len(user_follows)))
@@ -42,6 +55,12 @@ def evaluate_common_ppl_followed(user, friendUser):
 
 
 def evaluate_common_followers(user, friendUser):
+    '''
+    This function takes in two users and calculates the common ppl that both follow
+    :param user: first user
+    :param friendUser: second user
+    :return: N/A
+    '''
     print ("Looking for common followers..")
     user_followers = api.GetFollowerIDs(user_id=user.GetId(), screen_name=user.GetScreenName())
     friend_user_followers = api.GetFollowerIDs(user_id=friendUser.GetId(), screen_name=friendUser.GetScreenName())
@@ -63,6 +82,13 @@ def evaluate_common_followers(user, friendUser):
 
 
 def get_user_mentions(userTimeline, user):
+    '''
+    This function takes in a users timeline and a user object and calculates the tweets in the timeline which has the
+    mention of the other user.
+    :param userTimeline: the timeline
+    :param user: the user whose mention has to be evaluated.
+    :return: list of tweets from the timeline with the users mention
+    '''
     if not userTimeline:
         return
     source_tweeter = userTimeline[0]['user']['screen_name']
@@ -73,8 +99,16 @@ def get_user_mentions(userTimeline, user):
                 tweets_with_friend_mention.append(tweet)
 
     print ("%s's tweets with %s mention: %d" %(source_tweeter, user.GetScreenName(), len(tweets_with_friend_mention)))
+    return tweets_with_friend_mention
 
 def process_user_timeline(userTimeLine):
+    '''
+    This function takes in a users timeline and scrapes data out of it like the tweet sources, histogram of usermentions
+    vs the counts. etc
+    :param userTimeLine: the timeline of the user which needs to be analyzed
+    :return: tweets with other user mentions, descending order sorted histogram of users tweet sources, descending
+    order sorted histogram of usermentions and frequencies.
+    '''
     tweets_with_friend_mention = []
     user_tweet_sources = dict()
     user_tweet_mention_counters = dict()
@@ -126,7 +160,12 @@ def print_top_mentions(user_tweet_mention_counter, userName, n=5):
 
 
 def print_user_tweet_sources(user_tweet_sources, userName):
-
+    '''
+    This function takes in a users tweet sources and that users name and prints out the histogram
+    :param user_tweet_sources: the type of the source of the user tweet.
+    :param userName: the name of the user
+    :return: NA
+    '''
     if not user_tweet_sources:
         return
 
@@ -138,6 +177,11 @@ def print_user_tweet_sources(user_tweet_sources, userName):
 
 
 def print_user_details(user):
+    '''
+    Prints the user details
+    :param user: the user object
+    :return: NA
+    '''
     print ("***** User stats *****")
     print ("Name            : %s" % user.GetName())
     print ("Description     : %s" % user.GetDescription())
