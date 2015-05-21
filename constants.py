@@ -1,3 +1,4 @@
+#This is a comment from Mike. 
 __author__ = 'huralikoppia'
 
 CONSUMER_KEY="Consumer key"
